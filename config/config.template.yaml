@@ -1,0 +1,345 @@
+# =============================================================================
+# QualiaIA Configuration
+# =============================================================================
+# Copy to config/config.yaml and customize
+# Environment variables can be used: ${ENV_VAR_NAME}
+# =============================================================================
+
+# =============================================================================
+# CORPORATE IDENTITY
+# =============================================================================
+company:
+  name: "QualiaIA"
+  
+  # French entity (holding company)
+  france:
+    entity_name: "QualiaIS SAS"
+    entity_type: "SASU"  # Société par Actions Simplifiée Unipersonnelle
+    jurisdiction: "Paris, France"
+    # TODO: Fill after registration at https://procedures.inpi.fr
+    siret: ""  # 14-digit SIRET number
+    siren: ""  # 9-digit SIREN number
+    tva_intracom: ""  # FR + 11 digits
+    capital_social: 1000  # Minimum 1€, recommended 1000€+
+  
+  # US entity (operations)
+  usa:
+    entity_name: "QualiaIA LLC"
+    entity_type: "LLC"
+    jurisdiction: "Wyoming"  # Privacy + zero state income tax
+    # TODO: Fill after registration at https://www.wyo.gov/business
+    sos_id: ""  # Secretary of State ID
+    ein: ""  # IRS Employer Identification Number
+
+# =============================================================================
+# OPENROUTER (LLM Provider)
+# =============================================================================
+openrouter:
+  api_key: "${OPENROUTER_API_KEY}"
+  base_url: "https://openrouter.ai/api/v1"
+  
+  # Operational model (free tier for day-to-day operations)
+  operational_model: "x-ai/grok-4.1-fast:free"
+  
+  # Council models (paid, used only for critical decisions)
+  council_models:
+    - id: "anthropic/claude-sonnet-4"
+      role: "Risk Analyst"
+      weight: 1.0
+    - id: "openai/gpt-4o"
+      role: "Strategy Director"  
+      weight: 1.0
+    - id: "google/gemini-2.5-pro"
+      role: "Finance Officer"
+      weight: 1.0
+    - id: "x-ai/grok-3"
+      role: "Chairman"  # Tie-breaker
+      weight: 1.5
+  
+  # Fallback models if primary is unavailable
+  fallback_models:
+    - "meta-llama/llama-3.3-70b"
+    - "mistralai/mistral-large"
+    - "anthropic/claude-3.5-haiku"
+  
+  # Rate limiting
+  requests_per_minute: 60
+  max_retries: 3
+  retry_delay_seconds: 5
+
+# =============================================================================
+# DECISION THRESHOLDS
+# =============================================================================
+thresholds:
+  # Tier 1: Fully autonomous (no notification needed)
+  auto_approve_usd: 100
+  
+  # Tier 2: Council deliberation required
+  council_review_usd: 500
+  
+  # Tier 3: Human approval required
+  human_required_usd: 2000
+  
+  # Council settings
+  consensus_required: 0.66  # 2/3 majority
+  min_confidence: 0.7  # Below this = escalate to human
+  council_timeout_seconds: 120  # Max time for deliberation
+  
+  # Human approval settings
+  approval_timeout_hours: 24  # Auto-reject if no response
+  reminder_after_hours: 4  # Send reminder
+
+# =============================================================================
+# CRYPTO WALLET
+# =============================================================================
+wallet:
+  # Network configuration
+  network: "base"  # base, ethereum, polygon, arbitrum
+  currency: "USDC"
+  
+  # RPC endpoints (use your own for production)
+  rpc_urls:
+    base: "https://mainnet.base.org"
+    ethereum: "https://eth.llamarpc.com"
+    polygon: "https://polygon.llamarpc.com"
+    arbitrum: "https://arb1.arbitrum.io/rpc"
+  
+  # USDC contract addresses
+  usdc_contracts:
+    base: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+    ethereum: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    polygon: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359"
+    arbitrum: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+  
+  # Spending limits
+  limits:
+    max_single_tx_usd: 1000
+    max_daily_spend_usd: 5000
+    max_weekly_spend_usd: 20000
+  
+  # Multi-signature threshold
+  multisig_threshold_usd: 2000
+  
+  # Gas settings
+  max_gas_price_gwei: 50
+  gas_limit_multiplier: 1.2  # Safety margin
+  
+  # Address whitelist (transfers only to approved addresses)
+  # TODO: Add your approved addresses
+  approved_addresses: []
+
+# =============================================================================
+# x402 PROTOCOL (AI Agent Hiring)
+# =============================================================================
+x402:
+  enabled: true
+  facilitator_url: "https://x402.org/facilitator"
+  
+  # Limits for hiring external agents
+  max_agent_hire_usd: 500
+  max_daily_hires: 10
+  
+  # Trusted service providers
+  # TODO: Add trusted x402 service URLs
+  trusted_services: []
+  
+  # Our x402 server (for selling QualiaIA services)
+  server:
+    enabled: false  # Enable when ready to offer services
+    port: 8402
+    services: []
+
+# =============================================================================
+# COMMUNICATION CHANNELS
+# =============================================================================
+communication:
+  # Default channel for each priority level
+  priority_routing:
+    critical: ["phone", "sms", "telegram"]
+    urgent: ["telegram", "sms"]
+    standard: ["discord", "telegram"]
+    async: ["email"]
+    passive: ["dashboard"]
+  
+  # Telegram (Primary - Required)
+  telegram:
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    authorized_user_ids: "${TELEGRAM_AUTHORIZED_USER_IDS}"  # Comma-separated
+    
+    # Bot behavior
+    parse_mode: "Markdown"
+    disable_notification_standard: true  # Silent for non-urgent
+  
+  # Twilio (Emergency - Optional)
+  twilio:
+    enabled: false  # Set to true when configured
+    account_sid: "${TWILIO_ACCOUNT_SID}"
+    auth_token: "${TWILIO_AUTH_TOKEN}"
+    from_number: "${TWILIO_FROM_NUMBER}"
+    to_numbers: "${TWILIO_TO_NUMBERS}"  # Comma-separated
+    
+    # Voice settings
+    voice: "alice"
+    language: "en-US"
+  
+  # Discord (Team - Optional)
+  discord:
+    enabled: false  # Set to true when configured
+    webhooks:
+      alerts: "${DISCORD_ALERTS_WEBHOOK}"
+      status: "${DISCORD_STATUS_WEBHOOK}"
+      ventures: "${DISCORD_VENTURES_WEBHOOK}"
+  
+  # Email (Formal - Optional)
+  email:
+    enabled: false  # Set to true when configured
+    smtp:
+      host: "${SMTP_HOST}"
+      port: "${SMTP_PORT}"
+      username: "${SMTP_USERNAME}"
+      password: "${SMTP_PASSWORD}"
+      use_tls: true
+    from_address: "${EMAIL_FROM}"
+    to_addresses: "${EMAIL_TO}"  # Comma-separated
+  
+  # Dashboard (Web - Optional)
+  dashboard:
+    enabled: true
+    host: "${DASHBOARD_HOST:-0.0.0.0}"
+    port: "${DASHBOARD_PORT:-8080}"
+    api_keys: "${DASHBOARD_API_KEY}"  # Comma-separated
+    cors_origins: "${DASHBOARD_CORS_ORIGINS:-*}"
+
+# =============================================================================
+# VENTURES (Business Management)
+# =============================================================================
+ventures:
+  # Performance thresholds
+  min_validation_score: 0.7  # Minimum score to proceed from validation
+  min_profit_margin: 0.2  # 20% margin target
+  max_burn_months: 6  # Maximum months of losses before review
+  
+  # Scaling triggers
+  scale_trigger_revenue_usd: 10000  # Monthly revenue to trigger scaling review
+  scale_trigger_margin: 0.3  # 30% margin to trigger scaling
+  
+  # Shutdown triggers
+  shutdown_loss_threshold_usd: -5000  # Cumulative loss threshold
+  shutdown_consecutive_loss_months: 3
+  
+  # Default venture settings
+  defaults:
+    initial_validation_budget_usd: 500
+    initial_build_budget_usd: 2000
+
+# =============================================================================
+# LEGAL COMPLIANCE
+# =============================================================================
+compliance:
+  # France (RGPD/CNIL)
+  france:
+    rgpd_compliant: true
+    dpia_required: true  # Data Protection Impact Assessment
+    data_retention_days: 365
+    # TODO: Fill after CNIL registration
+    cnil_registration: ""
+    dpo_email: ""  # Data Protection Officer
+  
+  # USA
+  usa:
+    ccpa_compliant: true  # California
+    colorado_ai_act: true  # Effective June 2026
+    
+    # Privacy policy URL (required for CCPA)
+    privacy_policy_url: ""
+  
+  # EU AI Act (effective August 2026)
+  eu_ai_act:
+    risk_classification: "limited"  # minimal, limited, high, unacceptable
+    transparency_enabled: true
+    human_oversight_enabled: true
+
+# =============================================================================
+# MONITORING & LOGGING
+# =============================================================================
+monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: true
+    port: 9090
+  
+  # Alert thresholds
+  alerts:
+    wallet_low_balance_usd: 500
+    error_rate_threshold: 0.05  # 5%
+    response_time_ms: 5000
+    council_timeout_rate: 0.1  # 10%
+  
+  # Sentry error tracking
+  sentry:
+    enabled: false
+    dsn: "${SENTRY_DSN}"
+    environment: "${ENVIRONMENT:-development}"
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+logging:
+  level: "${LOG_LEVEL:-INFO}"
+  format: "json"  # json or text
+  
+  # Output destinations
+  outputs:
+    - type: "stdout"
+    - type: "file"
+      path: "logs/qualiaIA.log"
+      rotation: "daily"
+      retention_days: 30
+  
+  # Audit logging (required for compliance)
+  audit:
+    enabled: true
+    path: "logs/audit.log"
+    retention_days: 2555  # 7 years for tax compliance
+    
+    # Events to audit
+    events:
+      - "decision_made"
+      - "council_deliberation"
+      - "human_approval"
+      - "transaction_executed"
+      - "venture_created"
+      - "venture_shutdown"
+      - "config_changed"
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+database:
+  url: "${DATABASE_URL:-sqlite+aiosqlite:///./qualiaIA.db}"
+  
+  # Connection pool (for PostgreSQL)
+  pool_size: 5
+  max_overflow: 10
+  
+  # SQLite specific
+  sqlite:
+    journal_mode: "WAL"
+    synchronous: "NORMAL"
+
+# =============================================================================
+# SCHEDULER
+# =============================================================================
+scheduler:
+  # Daily report time (24h format, UTC)
+  daily_report_hour: 9
+  daily_report_minute: 0
+  
+  # Health check interval (seconds)
+  health_check_interval: 300  # 5 minutes
+  
+  # Market scan interval (seconds)
+  market_scan_interval: 3600  # 1 hour
+  
+  # Wallet balance check interval (seconds)
+  balance_check_interval: 300  # 5 minutes
