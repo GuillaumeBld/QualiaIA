@@ -207,6 +207,8 @@ See `config/config.template.yaml` for all options. Key sections:
 
 MIT License - see [LICENSE](LICENSE)
 
+> **Exploratory stage notice:** This repository represents the exploratory and research phase of QualiaIA. Future production versions of the system may be closed-source and operated as proprietary software by QualiaIS SAS and/or QualiaIA LLC. There is no commitment to release future production code under the MIT or any other open-source license.
+
 ## 🤝 Contributing
 
 Contributions welcome! Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) first.
